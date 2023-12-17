@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import gym
+from gym import spaces
+
+class BattleRoyaleEnv(gym.Env):
+    def __init__(self, num_bots=3):
+        super(BattleRoyaleEnv, self).__init__()
+        self.action_space = spaces.Discrete(4)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(256, 256, 3), dtype=np.uint8)
+        self.state = np.zeros((256, 256, 3), dtype=np.uint8)
+        self.num_bots = num_bots
+        self.bot_positions = np.random.randint(0, 256, size=(self.num_bots, 2))
+        self.buildings = [(30, 30, 60, 60), (80, 20, 110, 50)]
+
+    def reset(self):
+        self.state = np.zeros((256, 256, 3), dtype=np.uint8)
+        self.bot_positions = np.random.randint(0, 256, size=(self.num_bots, 2))
+        return self.get_state()
+
+    def get_state(self):
+        state = np.zeros((256, 256, 3), dtype=np.uint8)
+        self.draw_state(state)
+        return state
+
+    def draw_state(self, state):
+        self.draw_objects_type(state, self.bot_positions, 0, 'red')
+        self.draw_objects_type(state, self.buildings, 2, 'blue')
+
+    def draw_objects_type(self, state, objects, channel, color):
+        for obj in objects:
+            self.draw_object(obj, state, channel, color)
+
+    def draw_object(self, obj, state, channel, color):
+        if len(obj) == 2:
+            x, y = obj
+            self.draw_bot(x, y, state, channel, color)
+
+    def draw_bot(self, x, y, state, channel, color):
+        state[x, y, channel] = 255
+
+    def step(self, actions):
+        self.update_bot_positions()
+        return self.get_state(), 0, False, {}
+
+    def update_bot_positions(self):
+        self.bot_positions = np.clip(self.bot_positions + np.random.randint(-5, 6, size=(self.num_bots, 2)), 0, 255)
+
+    def render(self):
+        plt.imshow(self.state)
+        plt.show()
+
+# Пример использования:
+env = BattleRoyaleEnv(num_bots=3)
+try:
+    for episode in range(1):
+        observation = env.reset()
+        env.render()
+
+except KeyboardInterrupt:
+    print("Прервано вручную.")
+finally:
+    env.close()
